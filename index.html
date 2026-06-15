@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>クイズ よみあげアプリ</title>
+<style>
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Hiragino Sans", "Yu Gothic", "UD デジタル 教科書体 N-R", sans-serif;
+  background: linear-gradient(135deg, #fff6b7, #c9f2ff, #ffd6e8);
+  color: #222;
+}
+
+.app {
+  width: 100vw;
+  height: 100dvh;
+  padding: 12px 18px;
+  display: grid;
+  grid-template-rows: 150px 190px 86px 76px 18px;
+  gap: 10px;
+}
+
+/* 共通ウィンドウ */
+.window {
+  background: #fff;
+  border: 4px solid #333;
+  border-radius: 20px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.22);
+  overflow: hidden;
+}
+
+/* 問題文 */
+.question-window {
+  height: 150px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+}
+
+.question {
+  width: 100%;
+  max-height: 100%;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.3;
+  overflow: hidden;
+}
+
+/* 選択肢 */
+.choices {
+  height: 190px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.choice {
+  height: 190px;
+  background: #f7fbff;
+  border: 4px solid #333;
+  border-radius: 20px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.22);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.3;
+  overflow: hidden;
+}
+
+/* 読み上げボタン */
+.read-buttons {
+  height: 86px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+/* 操作ボタン */
+.bottom {
+  height: 76px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+button {
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+  font-size: 24px;
+  font-weight: 900;
+  border: 4px solid #333;
+  border-radius: 18px;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+}
+
+button:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+}
+
+.read-question {
+  background: #ffdf6e;
+}
+
+.read-choice {
+  background: #9ee7ff;
+}
+
+.control {
+  background: #d8ffd1;
+}
+
+.answer-btn {
+  background: #ffd1f0;
+}
+
+.stop {
+  background: #ffb3b3;
+}
+
+.status {
+  height: 18px;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* 前面ウィンドウ共通 */
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  padding: 24px;
+}
+
+.modal {
+  width: 720px;
+  height: 300px;
+  background: #fff;
+  border: 6px solid #333;
+  border-radius: 28px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 10px 0 rgba(0,0,0,0.35);
+  display: grid;
+  grid-template-rows: 1fr 82px;
+  gap: 22px;
+}
+
+.modal-title {
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.next-big {
+  font-size: 32px;
+  background: #8ff0a4;
+}
+
+.end-title {
+  font-size: 54px;
+}
+
+.restart-big {
+  font-size: 32px;
+  background: #ffdf6e;
+}
+
+/* 画面がさらに低い場合 */
+@media (max-height: 650px) and (orientation: landscape) {
+  .app {
+    padding: 8px 14px;
+    grid-template-rows: 130px 165px 76px 68px 16px;
+    gap: 8px;
+  }
+
+  .question-window {
+    height: 130px;
+    padding: 10px 16px;
+  }
+
+  .question {
+    font-size: 30px;
+  }
+
+  .choices {
+    height: 165px;
+    gap: 8px;
+  }
+
+  .choice {
+    height: 165px;
+    font-size: 27px;
+    padding: 10px;
+  }
+
+  .read-buttons {
+    height: 76px;
+    gap: 8px;
+  }
+
+  .bottom {
+    height: 68px;
+    gap: 8px;
+  }
+
+  button {
+    font-size: 22px;
+    border-width: 3px;
+  }
+}
+
+/* 縦向きになった場合の保険 */
+@media (orientation: portrait) {
+  html, body {
+    overflow-y: auto;
+  }
+
+  .app {
+    height: auto;
+    min-height: 100vh;
+    grid-template-rows: 160px 420px 320px 170px 20px;
+  }
+
+  .question-window {
+    height: 160px;
+  }
+
+  .choices {
+    height: 420px;
+    grid-template-columns: 1fr;
+  }
+
+  .choice {
+    height: 130px;
+  }
+
+  .read-buttons {
+    height: 320px;
+    grid-template-columns: 1fr;
+  }
+
+  .bottom {
+    height: 170px;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modal {
+    width: 92vw;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="window question-window">
+    <div class="question" id="questionText"></div>
+  </div>
+
+  <div class="choices">
+    <div class="choice" id="choice0"></div>
+    <div class="choice" id="choice1"></div>
+    <div class="choice" id="choice2"></div>
+  </div>
+
+  <div class="read-buttons">
+    <button class="read-question" onclick="readQuestion()">もんだいを<br>よむ</button>
+    <button class="read-choice" onclick="readChoice(0)">①を<br>よむ</button>
+    <button class="read-choice" onclick="readChoice(1)">②を<br>よむ</button>
+    <button class="read-choice" onclick="readChoice(2)">③を<br>よむ</button>
+  </div>
+
+  <div class="bottom">
+    <button class="control" onclick="prevQuestion()">まえ</button>
+    <button class="control" onclick="nextQuestion()">つぎ</button>
+    <button class="answer-btn" onclick="showAnswer()">こたえ</button>
+    <button class="stop" onclick="stopSpeak()">とめる</button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+</div>
+
+<!-- 答えウィンドウ -->
+<div class="modal-bg" id="answerModal">
+  <div class="modal">
+    <div class="modal-title" id="answerText"></div>
+    <button class="next-big" onclick="nextFromAnswer()">つぎへ</button>
+  </div>
+</div>
+
+<!-- おしまいウィンドウ -->
+<div class="modal-bg" id="endModal">
+  <div class="modal">
+    <div class="modal-title end-title">おしまい</div>
+    <button class="restart-big" onclick="restartQuiz()">はじめにもどる</button>
+  </div>
+</div>
+
+<script>
+/* =========================
+   ここを書きかえるだけでOK
+   ========================= */
+
+const quizData = [
+  {
+    question: "第１問。1日目に、行ったのは、どこでしょうか？",
+    choices: ["なす、サファリパーク", "ふじ、サファリパーク", "八景島シーパラダイス"],
+    answer: 0
+  },
+  {
+    question: "第２問。お楽しみ会で、７くみが歌ったのは、どれでしょうか？",
+    choices: ["アイドル", "マイバラード", "マルマルモリモリ"],
+    answer: 2
+  },
+  {
+    question: "第３問。2日目に、みんなで乗った、乗り物はなに？",
+    choices: ["しょうぼうしゃ", "ロープウェイ", "ジェットコースター"],
+    answer: 1
+  },
+  {
+    question: "第４問。りんどうこファミリー牧場で、みんなで作ったのは、なんでしょうか？",
+    choices: ["アイスクリーム", "カレーライス", "ヨーグルト"],
+    answer: 0
+  },
+  {
+    question: "第５問。3日目に、行かなかったのは、どこでしょうか？",
+    choices: ["トリックアートピア", "お菓子の城、なすハートランド", "ディズニーランド"],
+    answer: 2
+  },
+  {
+    question: "第６問。今日はどこで解散しますか？",
+    choices: ["がっこう", "東京駅", "解散しないで、もういちにち、泊まる"],
+    answer: 0
+  }
+];
+
+/* =========================
+   アプリ本体
+   ========================= */
+
+let currentIndex = 0;
+
+const questionText = document.getElementById("questionText");
+const choiceEls = [
+  document.getElementById("choice0"),
+  document.getElementById("choice1"),
+  document.getElementById("choice2")
+];
+const statusEl = document.getElementById("status");
+
+const answerModal = document.getElementById("answerModal");
+const answerText = document.getElementById("answerText");
+const endModal = document.getElementById("endModal");
+
+function showQuestion() {
+  const q = quizData[currentIndex];
+
+  questionText.textContent = q.question;
+
+  choiceEls.forEach((el, i) => {
+    el.textContent = `${i + 1}. ${q.choices[i]}`;
+  });
+
+  answerModal.style.display = "none";
+  endModal.style.display = "none";
+  answerText.textContent = "";
+
+  stopSpeak();
+
+  adjustTextSize(questionText, 34, 20);
+  choiceEls.forEach(el => adjustTextSize(el, 30, 20));
+}
+
+function adjustTextSize(el, maxSize, minSize) {
+  el.style.fontSize = maxSize + "px";
+
+  requestAnimationFrame(() => {
+    let size = maxSize;
+
+    while (
+      size > minSize &&
+      (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth)
+    ) {
+      size -= 2;
+      el.style.fontSize = size + "px";
+    }
+  });
+}
+
+function speak(text) {
+  if (!("speechSynthesis" in window)) {
+    statusEl.textContent = "このブラウザは読み上げに対応していません。";
+    return;
+  }
+
+  speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "ja-JP";
+  utter.rate = 0.85;
+  utter.pitch = 1.0;
+  utter.volume = 1.0;
+
+  const voices = speechSynthesis.getVoices();
+  const jpVoice = voices.find(v => v.lang === "ja-JP" || v.lang.startsWith("ja"));
+
+  if (jpVoice) {
+    utter.voice = jpVoice;
+  }
+
+  utter.onstart = () => {
+    statusEl.textContent = "よみあげています";
+  };
+
+  utter.onend = () => {
+    statusEl.textContent = "";
+  };
+
+  utter.onerror = () => {
+    statusEl.textContent = "読み上げできませんでした。音量や消音設定を確認してください。";
+  };
+
+  speechSynthesis.speak(utter);
+}
+
+function readQuestion() {
+  const q = quizData[currentIndex];
+  speak(q.question);
+}
+
+function readChoice(index) {
+  const q = quizData[currentIndex];
+  speak(`${index + 1}ばん。${q.choices[index]}`);
+}
+
+function stopSpeak() {
+  if ("speechSynthesis" in window) {
+    speechSynthesis.cancel();
+  }
+  statusEl.textContent = "";
+}
+
+function nextQuestion() {
+  if (currentIndex >= quizData.length - 1) {
+    showEnd();
+    return;
+  }
+
+  currentIndex++;
+  showQuestion();
+}
+
+function prevQuestion() {
+  currentIndex--;
+
+  if (currentIndex < 0) {
+    currentIndex = 0;
+  }
+
+  showQuestion();
+}
+
+function showAnswer() {
+  stopSpeak();
+
+  const q = quizData[currentIndex];
+  const number = q.answer + 1;
+  const answer = q.choices[q.answer];
+
+  answerText.textContent = `こたえは　${number}ばんの　${answer}です`;
+  answerModal.style.display = "flex";
+
+  adjustTextSize(answerText, 34, 22);
+}
+
+function nextFromAnswer() {
+  answerModal.style.display = "none";
+
+  if (currentIndex >= quizData.length - 1) {
+    showEnd();
+    return;
+  }
+
+  currentIndex++;
+  showQuestion();
+}
+
+function showEnd() {
+  stopSpeak();
+  answerModal.style.display = "none";
+  endModal.style.display = "flex";
+}
+
+function restartQuiz() {
+  currentIndex = 0;
+  showQuestion();
+}
+
+window.addEventListener("load", () => {
+  showQuestion();
+
+  if ("speechSynthesis" in window) {
+    speechSynthesis.getVoices();
+  }
+});
+
+window.addEventListener("resize", () => {
+  adjustTextSize(questionText, 34, 20);
+  choiceEls.forEach(el => adjustTextSize(el, 30, 20));
+});
+</script>
+
+</body>
+</html>
